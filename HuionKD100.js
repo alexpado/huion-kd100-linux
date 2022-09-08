@@ -28,6 +28,10 @@ class HuionKeypad {
                 if (this.log) console.log(`[${new Date().toLocaleString()}] Registering wheel interface`);
                 const deviceHandle = new HID.HID(kd100interface.path);
                 deviceHandle.on('data', data => this.handleWheel(this, data));
+            } else {
+                if (this.log) console.log(`[${new Date().toLocaleString()}] Registering arbitrary interface n°${kd100interface.interface}`);
+                const deviceHandle = new HID.HID(kd100interface.path);
+                deviceHandle.on('data', data => this.handleRaw(this, data))
             }
         });
         if (this.log) console.log(`[${new Date().toLocaleString()}] Ready...`);
@@ -53,6 +57,21 @@ class HuionKeypad {
         this.sendButtonPress(HuionKeypad.WHEEL_BUTTON);
     }
 
+    handleRaw(p, data) {
+        if (p.log) console.log(`[${new Date().toLocaleString()}] Arbitrary interface Data`, data);
+        const evType = data[1];
+
+        if (evType === HuionKeypad.RAW.EVENT_TYPE.BUTTON) {
+            const val = data[6] + (data[5] * 255) + (data[4] * 65025);
+            if (val > 0) {
+                this.sendButtonPress(HuionKeypad.RAW.BUTTONS_MAP[val]);
+            }
+        } else if (evType === HuionKeypad.RAW.EVENT_TYPE.WHEEL) {
+            this.sendWheelRoll(HuionKeypad.RAW.WHEEL_MAP[data[5]], 1);
+        }
+
+    }
+
     handleWheel(p, data) {
         if (data[1] === 2) {
             p.wheelDown = true;
@@ -60,7 +79,7 @@ class HuionKeypad {
             if (p.log) console.log(`[${new Date().toLocaleString()}] Received wheel button input.`);
         } else if (data[2] === 0 && data[1] === 0 && p.wheelDown) {
             p.wheelDown = false;
-        } else if (data[2] >= 1 || data[2] <= 255) { // Wheel even
+        } else if (data[2] >= 1 || data[2] <= 255) { // Wheel event
             const direction = data[3] === 255 ? HuionKeypad.WHEEL_DIRECTION.COUNTER_CLOCKWISE : HuionKeypad.WHEEL_DIRECTION.CLOCKWISE;
             const power = direction === HuionKeypad.WHEEL_DIRECTION.COUNTER_CLOCKWISE ? 256 - data[2] : data[2];
 
@@ -130,5 +149,37 @@ HuionKeypad.BUTTONS = {
     VBTN: 1304,
     HBTN: 44
 };
+
+HuionKeypad.RAW = {
+    EVENT_TYPE: {
+        BUTTON: 224,
+        WHEEL: 241
+    },
+    WHEEL_MAP: {
+        "1": HuionKeypad.WHEEL_DIRECTION.CLOCKWISE,
+        "2": HuionKeypad.WHEEL_DIRECTION.COUNTER_CLOCKWISE
+    },
+    BUTTONS_MAP: {
+        "65025": HuionKeypad.BUTTONS.BTN_1,
+        "130050": HuionKeypad.BUTTONS.BTN_2,
+        "260100": HuionKeypad.BUTTONS.BTN_3,
+        "520200": HuionKeypad.BUTTONS.BTN_4,
+        "1040400": HuionKeypad.BUTTONS.BTN_5,
+        "2080800": HuionKeypad.BUTTONS.BTN_6,
+        "4161600": HuionKeypad.BUTTONS.BTN_7,
+        "8323200": HuionKeypad.BUTTONS.BTN_8,
+        "255": HuionKeypad.BUTTONS.BTN_9,
+        "510": HuionKeypad.BUTTONS.BTN_10,
+        "1020": HuionKeypad.BUTTONS.BTN_11,
+        "2040": HuionKeypad.BUTTONS.BTN_12,
+        "4080": HuionKeypad.BUTTONS.BTN_13,
+        "8160": HuionKeypad.BUTTONS.BTN_14,
+        "16320": HuionKeypad.BUTTONS.BTN_15,
+        "2": HuionKeypad.BUTTONS.BTN_16,
+        "32640": HuionKeypad.BUTTONS.VBTN,
+        "1": HuionKeypad.BUTTONS.HBTN,
+        "4": HuionKeypad.WHEEL_BUTTON,
+    }
+}
 
 module.exports = HuionKeypad;
