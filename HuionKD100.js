@@ -28,8 +28,8 @@ class HuionKeypad {
                 if (this.log) console.log(`[${new Date().toLocaleString()}] Registering wheel interface`);
                 const deviceHandle = new HID.HID(kd100interface.path);
                 deviceHandle.on('data', data => this.handleWheel(this, data));
-            } else {
-                if (this.log) console.log(`[${new Date().toLocaleString()}] Registering arbitrary interface n°${kd100interface.interface}`);
+            } else if (kd100interface.interface === HuionKeypad.GROUPED_INTERFACE) {
+                if (this.log) console.log(`[${new Date().toLocaleString()}] Registering grouped interface`);
                 const deviceHandle = new HID.HID(kd100interface.path);
                 deviceHandle.on('data', data => this.handleRaw(this, data))
             }
@@ -122,6 +122,7 @@ class HuionKeypad {
 
 HuionKeypad.VENDOR_ID = 9580;
 HuionKeypad.PRODUCT_ID = 109;
+HuionKeypad.GROUPED_INTERFACE = 0;
 HuionKeypad.BUTTON_INTERFACE = 1;
 HuionKeypad.WHEEL_INTERFACE = 2;
 HuionKeypad.WHEEL_DIRECTION = {
